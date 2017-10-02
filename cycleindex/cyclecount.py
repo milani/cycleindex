@@ -19,8 +19,12 @@ def clean_matrix(A):
     oldshape = (0,0)
     while oldshape != A.shape:
         oldshape = A.shape
-        A = np.delete(A,np.where(np.any(A,axis=0) != True )[0],1)
-        A = np.delete(A,np.where(np.any(A,axis=1) != True )[0],0)
+        x = np.any(A,axis=0) != True
+        A = np.delete(A,np.where(x)[0],1)
+        A = np.delete(A,np.where(x)[0],0)
+        x = np.any(A,axis=1) != True
+        A = np.delete(A,np.where(x)[0],0)
+        A = np.delete(A,np.where(x)[0],1)
     return A
 
 def prime_count(A,L0,Subgraph,NeighboursNumber,Primes):
@@ -123,8 +127,8 @@ def is_symmetric(A):
     -------
     bool
     """
-
-    return np.allclose(A.transpose(1, 0), A)
+    
+    return sum(A.shape) % 2 == 0 and  np.allclose(A.transpose(1, 0), A)
 
 def cycle_count(A,L0):
     """
