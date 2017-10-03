@@ -1,3 +1,5 @@
+import numpy as np
+
 def nrsampling(G,size,exact=False):
     """
     Uses NRS algorithm[1] to uniformly sample subgraphs of size "size" from graph "G".
