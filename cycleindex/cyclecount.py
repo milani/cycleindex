@@ -53,7 +53,7 @@ def prime_count(A,L0,Subgraph,NeighboursNumber,Primes):
         passed to this function
     """
     SubgraphSize = len(Subgraph)
-    x = A[np.meshgrid(Subgraph,Subgraph,indexing='ij')]
+    x = A[np.ix_(Subgraph,Subgraph)]
     xeig = np.linalg.eigvals(x);
     xS = np.power(xeig,SubgraphSize)
     mk = min(L0 , NeighboursNumber + SubgraphSize)
@@ -148,8 +148,8 @@ def cycle_count(A,L0):
         Index "i" is the number of primes of length i>=1 up to L0
     """
     Primes = np.zeros(L0)
-    np.fill_diagonal(A,0)
-    A = clean_matrix(A)
+#    np.fill_diagonal(A,0)
+#    A = clean_matrix(A)
 
     if is_symmetric(A):
         Anw = A != 0
