@@ -1,5 +1,6 @@
 import pytest
 import numpy as np
+import random
 
 from cycleindex.sampling import (
     nrsampling
@@ -21,12 +22,12 @@ from cycleindex.sampling import (
     (
         np.array([[0,1,0],[0,0,1],[1,0,0]]),
         2,
-        [1,2],
+        [0,1],
         123
     ),
 ])
 def test_clean_matrix(G,size,expected,seed):
-    np.random.seed(seed)
+    random.seed(seed)
     assert nrsampling(G,size) == expected
 
 

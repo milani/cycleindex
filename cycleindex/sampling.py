@@ -1,4 +1,20 @@
 import numpy as np
+import random
+
+def dfs(G,root = 0,seen = []):
+    for i in np.nonzero(G[root,:])[0]:
+        if i not in seen:
+            seen.append(i)
+            dfs(G,i,seen)
+
+def is_weakly_connected(G):
+    seen = []
+    #Undirected structural version of G
+    G = (G != 0) | (G.transpose(1,0) != 0)
+    dfs(G,root=0,seen=seen)
+    if len(seen) == len(G):
+        return True
+    return False
 
 def nrsampling(G,size,exact=False):
     """
@@ -29,7 +45,7 @@ def nrsampling(G,size,exact=False):
     allowed = np.array([True]*len(G))
     neighbourhood = np.array([False]*len(G))
 
-    neighbourhood[np.random.randint(0,len(G)-1)] = True
+    neighbourhood[random.randint(0,len(G)-1)] = True
 
     # random vertex expansion
     while len(subgraph) < size:
@@ -41,10 +57,13 @@ def nrsampling(G,size,exact=False):
                 subgraph=[]
                 allowed = np.array([True]*len(G))
                 neighbourhood = np.array([False]*len(G))
-                neighbourhood[np.random.randint(0,len(G)-1)] = True
+                neighbourhood[random.randint(0,len(G)-1)] = True
                 continue
 
-        u = np.random.choice(neighbours)
+        # np.random.choice is a bit slower.
+        u_index = random.randint(0,len(neighbours)-1)
+        u = neighbours[u_index]
+
         allowed[u] = False
         neighbourhood[u] = True
         neighbourhood = neighbourhood + (G[u,:] != 0) + (G[:,u] != 0) # direction is not important
@@ -56,17 +75,19 @@ def nrsampling(G,size,exact=False):
     neighbours = np.where(neighbourhood & allowed)[0]
     while len(neighbours) > 0:
         i += 1
-        v = np.random.choice(neighbours)
-        alpha = np.random.random_sample()
+        v_index = random.randint(0,len(neighbours)-1)
+        v = neighbours[v_index]
+        alpha = random.random()
         if alpha < float(size)/i :
-            u_index = np.random.randint(0,len(subgraph)-1)
+            u_index = random.randint(0,len(subgraph)-1)
             u = subgraph[u_index]
-            
-            s_prime = np.concatenate([[v],np.delete(subgraph,u_index)])
-            s_prime_adj = G[np.meshgrid(s_prime,s_prime,indexing='ij')]
-            # Check if undirected version of the S' is connected by checking degree of all its vertices
-            if len(np.where(np.any(s_prime_adj + s_prime_adj.transpose(1,0),axis=0) == False)[0]) == 0:
+
+            s_prime = subgraph[:]
+            s_prime[u_index] = v
+            s_prime_adj = G[np.ix_(s_prime,s_prime)]
+            if is_weakly_connected(s_prime_adj):
                 subgraph[u_index] = v
+
         allowed[v] = False
         neighbourhood = neighbourhood + (G[v,:] != 0) + (G[:,v] != 0)
         neighbours = np.where(neighbourhood & allowed)[0]
