@@ -27,7 +27,7 @@ def clean_matrix(A):
         A = np.delete(A,np.where(x)[0],1)
     return A
 
-def prime_count(A,L0,Subgraph,NeighboursNumber,Primes):
+def prime_count(A,L0,Subgraph,NeighboursNumber,Primes,directed):
     """
     Calculates the contribution to the combinatorial sieve of a
     given subgraph. This function is an implementation of the
@@ -36,7 +36,7 @@ def prime_count(A,L0,Subgraph,NeighboursNumber,Primes):
     Parameters
     ----------
     A : numpy.ndarray
-        Adjacency matrix of the graph, preferably sparse 
+        Adjacency matrix of the graph, preferably sparse
     L0: int
         Maximum subgraph size
     Subgraph: list
@@ -52,21 +52,29 @@ def prime_count(A,L0,Subgraph,NeighboursNumber,Primes):
         now including the contribution of the subgraph
         passed to this function
     """
+    eigvals = np.linalg.eigvals if directed else np.linalg.eigvalsh
+
     SubgraphSize = len(Subgraph)
     x = A[np.ix_(Subgraph,Subgraph)]
-    xeig = np.linalg.eigvals(x);
+    x_p = np.abs(x)
+    xeig = eigvals(x)
+    xeig_p = eigvals(x_p)
     xS = np.power(xeig,SubgraphSize)
+    xS_p = np.power(xeig_p,SubgraphSize)
     mk = min(L0 , NeighboursNumber + SubgraphSize)
-    
+
     BinomialCoeff = 1
     for k in range(SubgraphSize,mk):
-        Primes[k-1] = Primes[k-1] + (-1)**k * BinomialCoeff * (-1)**SubgraphSize * sum(xS) /k
+        Primes[0][k-1] += (-1)**k * BinomialCoeff * (-1)**SubgraphSize * sum(xS) /k
+        Primes[1][k-1] += (-1)**k * BinomialCoeff * (-1)**SubgraphSize * sum(xS_p) /k
         xS = xS*xeig
+        xS_p = xS_p*xeig_p
         BinomialCoeff = BinomialCoeff * (SubgraphSize - k + NeighboursNumber) / (1 - SubgraphSize + k)
-    Primes[mk-1] = Primes[mk-1] + (-1)**mk * BinomialCoeff * (-1)**SubgraphSize * sum(xS) / mk
+    Primes[0][mk-1] += (-1)**mk * BinomialCoeff * (-1)**SubgraphSize * sum(xS) / mk
+    Primes[1][mk-1] += (-1)**mk * BinomialCoeff * (-1)**SubgraphSize * sum(xS_p) / mk
     return Primes
 
-def recursive_subgraphs(A,Anw,L0,Subgraph,AllowedVert,Primes,Neighbourhood):
+def recursive_subgraphs(A,Anw,L0,Subgraph,AllowedVert,Primes,Neighbourhood,directed):
     """
     Finds all the connected induced subgraphs of size up
     to "L0" of a graph known through its adjacency matrix
@@ -89,6 +97,8 @@ def recursive_subgraphs(A,Anw,L0,Subgraph,AllowedVert,Primes,Neighbourhood):
     Neighbourhood: list
         Indicator vector of the vertices that are contained
         in the current subgraph or reachable via one edge
+    Directed: bool
+        Shows if "A" is directed or not
 
     Returns
     -------
@@ -97,10 +107,10 @@ def recursive_subgraphs(A,Anw,L0,Subgraph,AllowedVert,Primes,Neighbourhood):
     """
     L = len(Subgraph)
     NeighboursNumber = len(np.nonzero(Neighbourhood)[0]) - L
-    Primes = prime_count(A,L0,Subgraph,NeighboursNumber,Primes)
+    Primes = prime_count(A,L0,Subgraph,NeighboursNumber,Primes,directed)
     if L == L0:
         return Primes
-    
+
     Neighbours = np.where(np.array(Neighbourhood) & np.array(AllowedVert))[0]
     for j in range(len(Neighbours)):
         v = Neighbours[j]
@@ -110,10 +120,10 @@ def recursive_subgraphs(A,Anw,L0,Subgraph,AllowedVert,Primes,Neighbourhood):
             Subgraph.append(v)
         AllowedVert[v] = False
         newNeighbourhood = Neighbourhood + Anw[v,:]
-        Primes = recursive_subgraphs(A,Anw,L0,Subgraph[:],AllowedVert[:],Primes,newNeighbourhood[:])
-    
+        Primes = recursive_subgraphs(A,Anw,L0,Subgraph[:],AllowedVert[:],Primes,newNeighbourhood[:],directed)
+
     return Primes
-    
+
 def is_symmetric(A):
     """
     Checks if matrix A is symmetric
@@ -127,7 +137,7 @@ def is_symmetric(A):
     -------
     bool
     """
-    
+
     return sum(A.shape) % 2 == 0 and  np.allclose(A.transpose(1, 0), A)
 
 def cycle_count(A,L0):
@@ -147,28 +157,28 @@ def cycle_count(A,L0):
     list
         Index "i" is the number of primes of length i>=1 up to L0
     """
-    Primes = np.zeros(L0)
-#    np.fill_diagonal(A,0)
-#    A = clean_matrix(A)
+    Primes = (np.zeros(L0),np.zeros(L0))
+    np.fill_diagonal(A,0)
 
     if is_symmetric(A):
         Anw = A != 0
+        directed = False
     else:
         Anw = ( A != 0 ) | ( A.transpose(1,0) != 0)
+        directed = True
 
     Size = len(A)
-    
     if L0 > Size:
         L0 = Size
-    
+
     AllowedVert = [True]*Size
     for i in range(len(A)):
         AllowedVert[i] = False
         Neighbourhood = [False]*Size
         Neighbourhood[i] = True
         Neighbourhood = Neighbourhood + Anw[i,:]
-        Primes = recursive_subgraphs(A,Anw,L0,[i],AllowedVert[:],Primes,Neighbourhood[:])
-    
+        Primes = recursive_subgraphs(A,Anw,L0,[i],AllowedVert[:],Primes,Neighbourhood[:],directed)
+
     return Primes
 
 __all__ = ['cycle_count']
