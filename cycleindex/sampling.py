@@ -1,20 +1,6 @@
 import numpy as np
 import random
-
-def dfs(G,root = 0,seen = []):
-    for i in np.nonzero(G[root,:])[0]:
-        if i not in seen:
-            seen.append(i)
-            dfs(G,i,seen)
-
-def is_weakly_connected(G):
-    seen = []
-    #Undirected structural version of G
-    G = (G != 0) | (G.transpose(1,0) != 0)
-    dfs(G,root=0,seen=seen)
-    if len(seen) == len(G):
-        return True
-    return False
+from cycleindex.utils import is_weakly_connected
 
 def nrsampling(G,size,exact=False):
     """
@@ -68,7 +54,6 @@ def nrsampling(G,size,exact=False):
         neighbourhood[u] = True
         neighbourhood = neighbourhood + (G[u,:] != 0) + (G[:,u] != 0) # direction is not important
         subgraph.append(u)
-        old_neighbours_size = len(neighbours)
 
     # Fix for bias toward subgraphs with higher clustering coef.
     i = size
@@ -80,7 +65,6 @@ def nrsampling(G,size,exact=False):
         alpha = random.random()
         if alpha < float(size)/i :
             u_index = random.randint(0,len(subgraph)-1)
-            u = subgraph[u_index]
 
             s_prime = subgraph[:]
             s_prime[u_index] = v

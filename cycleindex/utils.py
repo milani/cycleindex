@@ -43,4 +43,19 @@ def is_symmetric(A):
 
     return sum(A.shape) % 2 == 0 and  np.allclose(A.transpose(1, 0), A)
 
+def dfs(G,root = 0,seen = []):
+    for i in np.nonzero(G[root,:])[0]:
+        if i not in seen:
+            seen.append(i)
+            dfs(G,i,seen)
+
+def is_weakly_connected(G):
+    seen = []
+    #Undirected structural version of G
+    G = (G != 0) | (G.transpose(1,0) != 0)
+    dfs(G,root=0,seen=seen)
+    if len(seen) == len(G):
+        return True
+    return False
+
 
