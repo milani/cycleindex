@@ -1,33 +1,7 @@
 import numpy as np
+from utils import is_symmetric
 
-def clean_matrix(A):
-    """
-    Removes all the vertices of graph which do not sustain any cycle
-    by iteratively removing isolated vertices, sinks and sources until
-    the matrix is invariant under such removal.
-
-    Parameters
-    ----------
-    A : numpy.ndarray
-        Adjacency matrix
-
-    Returns
-    -------
-    numpy.ndarray
-        The shape of this array is different from the input array
-    """
-    oldshape = (0,0)
-    while oldshape != A.shape:
-        oldshape = A.shape
-        x = np.any(A,axis=0) != True
-        A = np.delete(A,np.where(x)[0],1)
-        A = np.delete(A,np.where(x)[0],0)
-        x = np.any(A,axis=1) != True
-        A = np.delete(A,np.where(x)[0],0)
-        A = np.delete(A,np.where(x)[0],1)
-    return A
-
-def prime_count(A,L0,Subgraph,NeighboursNumber,Primes,directed):
+def prime_count(A,L0,Subgraph,NeighboursNumber,Primes,Directed):
     """
     Calculates the contribution to the combinatorial sieve of a
     given subgraph. This function is an implementation of the
@@ -42,17 +16,20 @@ def prime_count(A,L0,Subgraph,NeighboursNumber,Primes,directed):
     Subgraph: list
         Current subgraph, a list of vertices, further vertices are
         added to this list
-    Primes: list
-        List regrouping the contributions of all subgraphs considered earlier
+    Primes: tuple
+        A tuple of two lists regrouping the contributions of all subgraphs
+        considered earlier
+    Directed: bool
+        If the graph is directed
 
     Returns
     -------
-    list
-        List with the contributions of all subgraphs so far and
-        now including the contribution of the subgraph
-        passed to this function
+    tuple
+        A tuple of two lists. Each show the contribution of all subgraphs so far
+        and now including the contributuon of the subgraph passed to this function.
+        The first is N_positive - N_negative, the next is N_positive + N_negative.
     """
-    eigvals = np.linalg.eigvals if directed else np.linalg.eigvalsh
+    eigvals = np.linalg.eigvals if Directed else np.linalg.eigvalsh
 
     SubgraphSize = len(Subgraph)
     x = A[np.ix_(Subgraph,Subgraph)]
@@ -74,7 +51,7 @@ def prime_count(A,L0,Subgraph,NeighboursNumber,Primes,directed):
     Primes[1][mk-1] += (-1)**mk * BinomialCoeff * (-1)**SubgraphSize * sum(xS_p) / mk
     return Primes
 
-def recursive_subgraphs(A,Anw,L0,Subgraph,AllowedVert,Primes,Neighbourhood,directed):
+def recursive_subgraphs(A,Anw,L0,Subgraph,AllowedVert,Primes,Neighbourhood,Directed):
     """
     Finds all the connected induced subgraphs of size up
     to "L0" of a graph known through its adjacency matrix
@@ -102,12 +79,12 @@ def recursive_subgraphs(A,Anw,L0,Subgraph,AllowedVert,Primes,Neighbourhood,direc
 
     Returns
     -------
-    list
-        List regrouping the contribution of all the subgraphs found so far
+    tuple
+        Two lists regrouping the contribution of all the subgraphs found so far
     """
     L = len(Subgraph)
     NeighboursNumber = len(np.nonzero(Neighbourhood)[0]) - L
-    Primes = prime_count(A,L0,Subgraph,NeighboursNumber,Primes,directed)
+    Primes = prime_count(A,L0,Subgraph,NeighboursNumber,Primes,Directed)
     if L == L0:
         return Primes
 
@@ -120,25 +97,9 @@ def recursive_subgraphs(A,Anw,L0,Subgraph,AllowedVert,Primes,Neighbourhood,direc
             Subgraph.append(v)
         AllowedVert[v] = False
         newNeighbourhood = Neighbourhood + Anw[v,:]
-        Primes = recursive_subgraphs(A,Anw,L0,Subgraph[:],AllowedVert[:],Primes,newNeighbourhood[:],directed)
+        Primes = recursive_subgraphs(A,Anw,L0,Subgraph[:],AllowedVert[:],Primes,newNeighbourhood[:],Directed)
 
     return Primes
-
-def is_symmetric(A):
-    """
-    Checks if matrix A is symmetric
-
-    Parameters
-    ----------
-    A : numpy.ndarray
-        Adjacency matrix
-
-    Returns
-    -------
-    bool
-    """
-
-    return sum(A.shape) % 2 == 0 and  np.allclose(A.transpose(1, 0), A)
 
 def cycle_count(A,L0):
     """
@@ -154,8 +115,10 @@ def cycle_count(A,L0):
 
     Returns
     -------
-    list
-        Index "i" is the number of primes of length i>=1 up to L0
+    tuple
+        Two lists are returned. In each, index "i" is the number of primes of length i>=1 up to L0
+        The first list is the count of N_positive - N_negative. The second one is the count of
+        N_positive + N_negative. Using these two lists, one can compute N_positive and N_negative.
     """
     Primes = (np.zeros(L0),np.zeros(L0))
     np.fill_diagonal(A,0)

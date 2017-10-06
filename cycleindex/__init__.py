@@ -1,5 +1,6 @@
 import numpy as np
-from cyclecount import *
-from sampling import *
+from cyclecount import cycle_count
+from sampling import nrsampling
+from utils import clean_matrix
 
-__all__ = ["cycle_count","nrsampling"]
+__all__ = ['clean_matrix','cycle_count','nrsampling']
