@@ -26,7 +26,7 @@ from cycleindex.sampling import (
         123
     ),
 ])
-def test_clean_matrix(G,size,expected,seed):
+def test_nrsampling(G,size,expected,seed):
     random.seed(seed)
     assert nrsampling(G,size) == expected
 
