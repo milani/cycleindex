@@ -58,16 +58,19 @@ def is_weakly_connected(G):
         return True
     return False
 
-def calc_ratio(plus_minus,plus_plus):
-    plus_minus = np.array(plus_minus)
-    plus_plus = np.array(plus_plus)
+def ndim(array):
+    count = 0
+    if isinstance(array,list):
+        count = 1 + ndim(array[0])
+    return count
 
-    if plus_minus.ndim == 1:
+def calc_ratio(plus_minus,plus_plus):
+    if ndim(plus_minus) == 1:
         plus_minus = np.expand_dims(plus_minus,0)
         plus_plus = np.expand_dims(plus_plus,0)
-    elif plus_minus.ndim == 3:
-        plus_minus = np.squeeze(plus_minus,axis=0)
-        plus_plus = np.squeeze(plus_plus,axis=0)
+    elif ndim(plus_minus) == 3:
+        plus_minus = np.concatenate(plus_minus)
+        plus_plus = np.concatenate(plus_plus)
 
     plus_minus = np.mean(plus_minus,axis=0)
     plus_plus = np.mean(plus_plus,axis=0)

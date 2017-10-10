@@ -120,7 +120,7 @@ def cycle_count(A,L0):
         The first list is the count of N_positive - N_negative. The second one is the count of
         N_positive + N_negative. Using these two lists, one can compute N_positive and N_negative.
     """
-    Primes = (np.zeros(L0),np.zeros(L0))
+    Primes = ([0]*L0,[0]*L0)
     np.fill_diagonal(A,0)
 
     if is_symmetric(A):
