@@ -2,12 +2,13 @@ import numpy as np
 import random
 from cycleindex.utils import is_weakly_connected
 
+
 def _vxsampling(G, size, exact=False):
     subgraph = []
-    allowed = np.array([True]*len(G))
-    neighbourhood = np.array([False]*len(G))
+    allowed = np.array([True] * len(G))
+    neighbourhood = np.array([False] * len(G))
 
-    neighbourhood[random.randint(0,len(G)-1)] = True
+    neighbourhood[random.randint(0, len(G) - 1)] = True
 
     # random vertex expansion
     while len(subgraph) < size:
@@ -16,22 +17,23 @@ def _vxsampling(G, size, exact=False):
             if not exact:
                 return subgraph, allowed, neighbourhood
             else:
-                subgraph=[]
-                allowed = np.array([True]*len(G))
-                neighbourhood = np.array([False]*len(G))
-                neighbourhood[random.randint(0,len(G)-1)] = True
+                subgraph = []
+                allowed = np.array([True] * len(G))
+                neighbourhood = np.array([False] * len(G))
+                neighbourhood[random.randint(0, len(G) - 1)] = True
                 continue
 
         # np.random.choice is a bit slower.
-        u_index = random.randint(0,len(neighbours)-1)
+        u_index = random.randint(0, len(neighbours) - 1)
         u = neighbours[u_index]
 
         allowed[u] = False
         neighbourhood[u] = True
-        neighbourhood = neighbourhood + (G[u,:] != 0) + (G[:,u] != 0) # direction is not important
+        neighbourhood = neighbourhood + (G[u, :] != 0) + (G[:, u] != 0)  # direction is not important
         subgraph.append(u)
 
     return subgraph, allowed, neighbourhood
+
 
 def vxsampling(G, size, exact=False):
     """
@@ -54,10 +56,11 @@ def vxsampling(G, size, exact=False):
     list
         List of vertices that form the sampled subgraph.
     """
-    subgraph,_,_ = _vxsampling(G,size,exact)
+    subgraph, _, _ = _vxsampling(G, size, exact)
     return subgraph
 
-def nrsampling(G,size,exact=False):
+
+def nrsampling(G, size, exact=False):
     """
     Uses NRS algorithm[1] to uniformly sample connected induced subgraphs of size "size" from graph "G".
 
@@ -82,29 +85,29 @@ def nrsampling(G,size,exact=False):
     list
         List of vertices that form the sampled subgraph.
     """
-    subgraph, allowed, neighbourhood = _vxsampling(G,size,exact)
+    subgraph, allowed, neighbourhood = _vxsampling(G, size, exact)
     # Fix for bias toward subgraphs with higher clustering coef.
     i = size
     neighbours = np.where(neighbourhood & allowed)[0]
     while len(neighbours) > 0:
         i += 1
-        v_index = random.randint(0,len(neighbours)-1)
+        v_index = random.randint(0, len(neighbours) - 1)
         v = neighbours[v_index]
         alpha = random.random()
-        if alpha < float(size)/i :
-            u_index = random.randint(0,len(subgraph)-1)
+        if alpha < float(size) / i:
+            u_index = random.randint(0, len(subgraph) - 1)
 
             s_prime = subgraph[:]
             s_prime[u_index] = v
-            s_prime_adj = G[np.ix_(s_prime,s_prime)]
+            s_prime_adj = G[np.ix_(s_prime, s_prime)]
             if is_weakly_connected(s_prime_adj):
                 subgraph[u_index] = v
 
         allowed[v] = False
-        neighbourhood = neighbourhood + (G[v,:] != 0) + (G[:,v] != 0)
+        neighbourhood = neighbourhood + (G[v, :] != 0) + (G[:, v] != 0)
         neighbours = np.where(neighbourhood & allowed)[0]
 
     return subgraph
 
 
-__all__ = ["vxsampling","nrsampling"]
+__all__ = ["vxsampling", "nrsampling"]
