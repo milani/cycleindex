@@ -13,22 +13,54 @@ pip install git+https://github.com/milani/cycleindex.git
 ```
 
 ## How to use
-Use `cycle_count` function to count for simple cycles in the graph. It
-takes a graph (numpy.ndarray) and the maximum cycle length (an integer) as the input.
-It returns an array with cycle index of the graph for each cycle length upto the length provided.
-```
-from cycleindex import cycle_count
+For a complete example please visit [examples/](examples/).
 
-A = np.array([[0,0.5,0.5,0],[0.5,0,0.5,0],[0.5,0.5,0,0.4],[0,0,0.4,0]])
-print(cycle_count(A,5))
+Here is a quick demonstration.
+
+Having an undirected graph of 4 nodes like below, we want to count the cycles of upto length 5 and calculate the balance ratio for each length. Please note that the graph is weighted and each edge has weight equal to 1 except the edge `(1,2)` which has the weight of -1. 
+
+```
+1  2
+*--*
++  +
+*++*
+4  3
+```
+
+First, calculate the cycles.
+
+```python
+>>> import numpy as np
+>>> from cycleindex import balance_ratio, cycle_count, clean_matrix
+>>>
+>>> A = np.array([[0,-1,0,1],[-1,0,1,0],[0,1,0,1],[1,0,1,0]])
+>>> cycle_count(A,5)
 ```
 
 The output is:
-```
-[  0.00000000e+00   9.10000000e-01   2.50000000e-01   1.37043155e-16
-   0.00000000e+00]
-```
-Considering the triangle index, we have two triangles (0120,0210) with the weight 2*(0.5*0.5*0.5) = 0.25.
 
-### TODO
-* Implement Monte Carlo approach to evaluate the index for large networks
+```
+([0.0, 4.0, 1.3322676295501878e-15, -2.0000000000000036, 0], [0.0, 4.0, 1.3322676295501878e-15, 1.9999999999999964, 0])
+```
+
+which is a tuple of two lists. The first list shows `N_pos - N_neg` and the second list shows `N_pos + N_neg`. Here, we have 4 backtracks, 0 triangles and 2 negative square graphs. If you are wondering why 2 negative C4, that's because the algorithm works on directed graphs so an undirected edge is equivalent to two directed ones, hence two square graphs in A.
+
+To calculate ratio `R = -N_neg / ( N_pos + N_neg )`, we can use `balance_ratio` function:
+
+```python
+>>> balance_ratio(A,4,exact=True)
+```
+
+```
+array([ 0.,  0.,  0.,  1.])
+```
+
+It shows that 100% of C4s in `A` have negative weight.
+
+
+## Additional functionalities
+
+* Works for both directed and undirected graphs.
+* Works with weighted graphs.
+* Has sampling capabilities for very large graphs to estimate `balance_ratio`
+* Supports multiprocessing to calculates ratios even faster.
