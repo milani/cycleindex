@@ -28,7 +28,7 @@ def batch_count_parallel_(G, length, batch_size, n_cores, pool, sampling_func=nr
     return counts
 
 
-def balance_ratio(G, length, exact=False, n_samples=100000, accuracy=None, parallel=True):
+def balance_ratio(G, length, exact=False, n_samples=100000, accuracy=None, sampling_func=nrsampling, parallel=True):
     """
     Returns balance ratio of "G" based on simple cycles of length upto "length". Please note
     that it catches the Keyboard interruption if "exact" is False. It is helpful when one wants
@@ -52,6 +52,8 @@ def balance_ratio(G, length, exact=False, n_samples=100000, accuracy=None, paral
         If provided, it is used as a threshold on standard deviation of estimated ratios. In this
         case, the "n_samples" parameter is ignored and algorithm runs until the desired accuracy
         is reached.
+    sampling_func : function
+        A sampling function from `cycleindex.sampling` module.
     parallel : bool
         If True, the sampling is done in parallel.
         If "exact" is True, "parallel" is ignored.
@@ -66,13 +68,13 @@ def balance_ratio(G, length, exact=False, n_samples=100000, accuracy=None, paral
     else:
         counts = ([], [])
         batch_count = batch_count_
-        args = (nrsampling, True, counts)
+        args = (sampling_func, True, counts)
 
         if parallel:
             n_cores = cpu_count()
             pool = Pool(processes=n_cores)
             batch_count = batch_count_parallel_
-            args = (n_cores, pool, nrsampling, True, counts)
+            args = (n_cores, pool, sampling_func, True, counts)
 
         if accuracy:
             last_ratios = []
