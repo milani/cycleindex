@@ -1,4 +1,5 @@
 import numpy as np
+import signal
 from multiprocessing import Pool, cpu_count
 from cyclecount import cycle_count
 from sampling import nrsampling, vxsampling
@@ -26,6 +27,10 @@ def batch_count_parallel_(G, length, batch_size, n_cores, pool, sampling_func=nr
     counts[1].append(sum(count[1], []))
 
     return counts
+
+
+def init_worker_():
+        signal.signal(signal.SIGINT, signal.SIG_IGN)
 
 
 def balance_ratio(G, length, exact=False, n_samples=100000, accuracy=None, sampling_func=nrsampling, parallel=True):
@@ -72,23 +77,32 @@ def balance_ratio(G, length, exact=False, n_samples=100000, accuracy=None, sampl
 
         if parallel:
             n_cores = cpu_count()
-            pool = Pool(processes=n_cores)
+            pool = Pool(n_cores,init_worker_)
             batch_count = batch_count_parallel_
             args = (n_cores, pool, sampling_func, True, counts)
 
-        if accuracy:
-            last_ratios = []
-            batch_size = 1000
-            deviation = accuracy
+        try:
+            if accuracy:
+                last_ratios = []
+                batch_size = 1000
+                deviation = accuracy
 
-            while np.any(deviation >= accuracy):
-                batch_count(G, length, batch_size, *args)
-                ratios = calc_ratio(*counts)
-                last_ratios.append(ratios)
-                if len(last_ratios) > 5:
-                    deviation = np.std(last_ratios, axis=0)
-        else:
-            batch_count(G, length, n_samples, *args)
+                while np.any(deviation >= accuracy):
+                    batch_count(G, length, batch_size, *args)
+                    ratios = calc_ratio(*counts)
+                    last_ratios.append(ratios)
+                    if len(last_ratios) > 5:
+                        deviation = np.std(last_ratios, axis=0)
+            else:
+                batch_count(G, length, n_samples, *args)
+        except KeyboardInterrupt:
+            if pool:
+                pool.terminate()
+                pool.join()
+
+        if parallel:
+            pool.close()
+            pool.join()
 
     return calc_ratio(*counts)
 
