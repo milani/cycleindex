@@ -1,12 +1,17 @@
 import numpy as np
 import signal
-from multiprocessing import Pool, cpu_count
+from multiprocessing import Pool, sharedctypes, cpu_count
 from cyclecount import cycle_count
 from sampling import nrsampling, vxsampling
 from utils import clean_matrix, calc_ratio
 
 
 def batch_count_(G, length, batch_size, sampling_func=nrsampling, exact_subgraph_size=True, counts=([], [])):
+
+    if G is None:
+        # G is provided via global shared variable shared_G
+        G = np.ctypeslib.as_array(shared_G)
+
     for i in range(batch_size):
         subgraph = sampling_func(G, length, exact_subgraph_size)
         count = cycle_count(G[np.ix_(subgraph, subgraph)], length)
@@ -16,7 +21,7 @@ def batch_count_(G, length, batch_size, sampling_func=nrsampling, exact_subgraph
 
 
 def batch_count_parallel_(G, length, batch_size, n_cores, pool, sampling_func=nrsampling, exact_subgraph_size=True, counts=([], [])):
-    promises = [pool.apply_async(batch_count_, args=(G, length, batch_size / n_cores, sampling_func, exact_subgraph_size))
+    promises = [pool.apply_async(batch_count_, args=(None, length, batch_size / n_cores, sampling_func, exact_subgraph_size))
                 for i in range(n_cores)]
     count = ([], [])
     for p in promises:
@@ -30,7 +35,7 @@ def batch_count_parallel_(G, length, batch_size, n_cores, pool, sampling_func=nr
 
 
 def init_worker_():
-        signal.signal(signal.SIGINT, signal.SIG_IGN)
+    signal.signal(signal.SIGINT, signal.SIG_IGN)
 
 
 def balance_ratio(G, length, exact=False, n_samples=100000, accuracy=None, sampling_func=nrsampling, parallel=True):
@@ -76,7 +81,15 @@ def balance_ratio(G, length, exact=False, n_samples=100000, accuracy=None, sampl
         args = (sampling_func, True, counts)
 
         if parallel:
+            global shared_G
             n_cores = cpu_count()
+
+            if G.__array_interface__['strides']:
+                G = np.ascontiguousarray(G)
+
+            tmp = np.ctypeslib.as_ctypes(G)
+            shared_G = sharedctypes.Array(tmp._type_, tmp, lock=False)
+            G = None
             pool = Pool(n_cores,init_worker_)
             batch_count = batch_count_parallel_
             args = (n_cores, pool, sampling_func, True, counts)
@@ -103,6 +116,7 @@ def balance_ratio(G, length, exact=False, n_samples=100000, accuracy=None, sampl
         if parallel:
             pool.close()
             pool.join()
+            del shared_G
 
     return calc_ratio(*counts)
 
