@@ -1,9 +1,9 @@
 import numpy as np
 import signal
 from multiprocessing import Pool, sharedctypes, cpu_count
-from cyclecount import cycle_count
-from sampling import nrsampling, vxsampling
-from utils import clean_matrix, calc_ratio
+from .cyclecount import cycle_count
+from .sampling import nrsampling, vxsampling
+from .utils import clean_matrix, calc_ratio
 
 
 def batch_count_(G, length, batch_size, sampling_func=nrsampling, exact_subgraph_size=True, counts=([], [])):
