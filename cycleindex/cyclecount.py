@@ -1,5 +1,5 @@
 import numpy as np
-from utils import is_symmetric
+from .utils import is_symmetric
 
 
 def prime_count(A, L0, Subgraph, NeighboursNumber, Primes, Directed):
